@@ -22,23 +22,56 @@ jobs:
     environment: production
 
     steps:
+      # Step 1: Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Step 2: Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
+      # Step 3: Install dependencies
       - name: Install dependencies
         run: npm ci
 
+      # Step 4: Build Vite application
       - name: Build Vite application
         env:
           CI: "true"
         run: npm run build
 
+      # Step 5: Diagnose GitHub OIDC claims
+      # TEMPORARY: Remove after resolving authentication.
+      - name: Diagnose GitHub OIDC claims
+        shell: bash
+        run: |
+          echo "Fetching GitHub OIDC token claims..."
+
+          TOKEN_RESPONSE=$(curl -fsS \
+            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com")
+
+          TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.value')
+
+          # Decode JWT payload with proper base64url padding
+          TOKEN_PAYLOAD=$(echo "$TOKEN" | cut -d. -f2)
+
+          PAD=$(( (4 - ${#TOKEN_PAYLOAD} % 4) % 4 ))
+          TOKEN_PAYLOAD="${TOKEN_PAYLOAD}$(printf '%*s' "$PAD" '' | tr ' ' '=')"
+
+          echo "OIDC token claims:"
+          printf '%s' "$TOKEN_PAYLOAD" | \
+            tr '_-' '/+' | \
+            base64 -d | \
+            jq '{iss, aud, sub, repository, ref, environment}'
+
+          echo "Expected standard subject:"
+          echo "repo:ottoaid/landing-page:environment:production"
+
+      # Step 6: Authenticate with AWS using OIDC
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -46,12 +79,14 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
           role-session-name: GitHubActionsProduction
 
+      # Step 7: Upload versioned Vite assets
       - name: Upload versioned assets to S3
         run: |
           aws s3 sync dist/assets/ \
             s3://${{ vars.S3_BUCKET }}/assets/ \
             --cache-control "public,max-age=31536000,immutable"
 
+      # Step 8: Upload remaining files
       - name: Upload remaining files to S3
         run: |
           aws s3 sync dist/ \
@@ -59,17 +94,24 @@ jobs:
             --exclude "assets/*" \
             --cache-control "public,max-age=0,must-revalidate"
 
+      # Step 9: Invalidate CloudFront cache
       - name: Invalidate CloudFront cache
         run: |
           aws cloudfront create-invalidation \
             --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} \
             --paths "/*"
 
+      # Step 10: Deployment summary
       - name: Deployment summary
         run: |
-          echo "### Production deployment complete" \
+          echo "### OttAid Production Deployment" \
             >> "$GITHUB_STEP_SUMMARY"
-          echo "Bucket: ${{ vars.S3_BUCKET }}" \
+
+          echo "S3 Bucket: ${{ vars.S3_BUCKET }}" \
             >> "$GITHUB_STEP_SUMMARY"
-          echo "Region: ${{ vars.AWS_REGION }}" \
+
+          echo "AWS Region: ${{ vars.AWS_REGION }}" \
+            >> "$GITHUB_STEP_SUMMARY"
+
+          echo "Deployment completed successfully." \
             >> "$GITHUB_STEP_SUMMARY"
