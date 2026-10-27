@@ -337,75 +337,127 @@ function Footer() {
   );
 }
 
+const DEMO_API_URL = import.meta.env.VITE_DEMO_API_URL;
+
 function AssessmentDialog({ dialogRef }) {
-  const [submitted, setSubmitted] = useState(false);
-  const close = () => dialogRef.current?.close();
+  const [status, setStatus] = useState("idle");
+  const [error, setError] = useState("");
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    company: "",
+    unitsManaged: "",
+    message: "",
+  });
+
+  const close = () => {
+    if (status !== "submitting") dialogRef.current?.close();
+  };
+
+  function handleChange(event) {
+    const { name, value } = event.target;
+    setForm((current) => ({ ...current, [name]: value }));
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    if (status === "submitting" || status === "success") return;
+
+    if (!DEMO_API_URL) {
+      setError("Demo requests aren't configured yet. Please try again later.");
+      setStatus("error");
+      return;
+    }
+
+    setError("");
+    setStatus("submitting");
+    try {
+      const response = await fetch(DEMO_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!response.ok) throw new Error(`Submission failed (${response.status})`);
+      setStatus("success");
+      setForm({ name: "", email: "", company: "", unitsManaged: "", message: "" });
+    } catch (err) {
+      console.error("Demo request error:", err);
+      setError("We couldn't send your request. Please try again.");
+      setStatus("error");
+    }
+  }
+
   return (
     <dialog
       ref={dialogRef}
       aria-labelledby="assessment-title"
+      onClose={() => {
+        if (status !== "submitting") {
+          setStatus("idle");
+          setError("");
+        }
+      }}
+      onCancel={(event) => {
+        if (status === "submitting") event.preventDefault();
+      }}
       onClick={(event) => {
         if (event.target !== event.currentTarget) return;
         const rect = event.currentTarget.getBoundingClientRect();
         if (
-          event.clientX < rect.left ||
-          event.clientX > rect.right ||
-          event.clientY < rect.top ||
-          event.clientY > rect.bottom
-        )
-          close();
+          event.clientX < rect.left || event.clientX > rect.right ||
+          event.clientY < rect.top || event.clientY > rect.bottom
+        ) close();
       }}
     >
-      <button className="close" aria-label="Close dialog" onClick={close}>
+      <button className="close" type="button" aria-label="Close dialog" onClick={close} disabled={status === "submitting"}>
         ×
       </button>
-      <h2 id="assessment-title">Let’s find your first automation.</h2>
-      <p>
-        This sample form previews an assessment request. Submissions stay in
-        this browser session and are not sent to a sales team.
-      </p>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          setSubmitted(true);
-        }}
-      >
-        <label className="field">
-          Your name
-          <input
-            name="name"
-            autoComplete="name"
-            required
-            placeholder="Alex Morgan"
-          />
-        </label>
-        <label className="field">
-          Work email
-          <input
-            name="email"
-            autoComplete="email"
-            type="email"
-            required
-            placeholder="alex@company.com"
-          />
-        </label>
-        <label className="field">
-          Company
-          <input
-            name="company"
-            autoComplete="organization"
-            required
-            placeholder="Your property management company"
-          />
-        </label>
-        <button className="btn" type="submit">
-          Preview assessment request ↗
-        </button>
-      </form>
-      <p role="status">
-        {submitted &&
-          "Your sample assessment request is ready. In a live product, this step would connect to your booking or CRM system."}
-      </p>
+      {status === "success" ? (
+        <div className="assessment-success" role="status">
+          <div className="assessment-success-icon" aria-hidden="true">✓</div>
+          <h2 id="assessment-title">Thanks for reaching out.</h2>
+          <p>Your request has been received. We'll be in touch to discuss your team's workflows and next steps.</p>
+          <button type="button" className="btn" onClick={close}>Done ↗</button>
+        </div>
+      ) : (
+        <>
+          <div className="eyebrow">A better workflow starts here</div>
+          <h2 id="assessment-title">Let’s find your first automation.</h2>
+          <p>Tell us a little about your property management team. We'll reach out to arrange a free demo and discuss what you want to automate.</p>
+          <form onSubmit={handleSubmit}>
+            <label className="field">
+              Your name
+              <input name="name" autoComplete="name" required maxLength={120} placeholder="Alex Morgan" value={form.name} onChange={handleChange} disabled={status === "submitting"} />
+            </label>
+            <label className="field">
+              Work email
+              <input name="email" autoComplete="email" type="email" required maxLength={254} placeholder="alex@company.com" value={form.email} onChange={handleChange} disabled={status === "submitting"} />
+            </label>
+            <label className="field">
+              Company
+              <input name="company" autoComplete="organization" required maxLength={150} placeholder="Your property management company" value={form.company} onChange={handleChange} disabled={status === "submitting"} />
+            </label>
+            <label className="field">
+              Units managed
+              <select name="unitsManaged" required value={form.unitsManaged} onChange={handleChange} disabled={status === "submitting"}>
+                <option value="">Select portfolio size</option>
+                <option value="under-100">Under 100</option>
+                <option value="100-500">100–500</option>
+                <option value="500-2000">500–2,000</option>
+                <option value="2000-plus">2,000+</option>
+              </select>
+            </label>
+            <label className="field">
+              What would you like to automate? <span className="optional">(optional)</span>
+              <textarea name="message" rows={3} maxLength={2000} placeholder="Maintenance requests, tenant updates, vendor coordination..." value={form.message} onChange={handleChange} disabled={status === "submitting"} />
+            </label>
+            {error && <p className="assessment-error" role="alert">{error}</p>}
+            <button className="btn assessment-submit" type="submit" disabled={status === "submitting"}>
+              {status === "submitting" ? "Sending request…" : "Request a free demo ↗"}
+            </button>
+          </form>
+        </>
+      )}
     </dialog>
   );
 }

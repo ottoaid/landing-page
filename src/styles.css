@@ -585,3 +585,24 @@ dialog p {
     flex-wrap: wrap;
   }
 }
+/* Append these styles to your existing styles.css. */
+dialog .field select,
+dialog .field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  color: inherit;
+  background: #fff;
+  border: 1px solid #d9dfd3;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+dialog .field textarea { resize: vertical; min-height: 92px; }
+dialog .field select:focus-visible,
+dialog .field textarea:focus-visible { outline: 2px solid #7e9a68; outline-offset: 2px; }
+dialog .optional { font-weight: 400; opacity: .65; }
+dialog .assessment-error { color: #a12b2b; margin: 10px 0; }
+dialog .assessment-submit { width: 100%; justify-content: center; }
+dialog .assessment-success { text-align: center; padding: 20px 4px; }
+dialog .assessment-success-icon { display: inline-grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: #e9f1e4; color: #507744; font-size: 26px; margin-bottom: 14px; }
+dialog button:disabled { opacity: .65; cursor: not-allowed; }
