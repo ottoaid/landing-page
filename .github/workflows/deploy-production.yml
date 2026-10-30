@@ -41,6 +41,7 @@ jobs:
       - name: Build Vite application
         env:
           CI: "true"
+          VITE_DEMO_API_URL: ${{ vars.VITE_DEMO_API_URL }}
         run: npm run build
 
       # 5. Authenticate with AWS using OIDC

@@ -375,7 +375,13 @@ function AssessmentDialog({ dialogRef }) {
       const response = await fetch(DEMO_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          name: form.name.trim(),
+          email: form.email.trim(),
+          company: form.company.trim(),
+          units: form.unitsManaged,
+          message: form.message.trim(),
+        }),
       });
       if (!response.ok) throw new Error(`Submission failed (${response.status})`);
       setStatus("success");
@@ -448,8 +454,8 @@ function AssessmentDialog({ dialogRef }) {
               </select>
             </label>
             <label className="field">
-              What would you like to automate? <span className="optional">(optional)</span>
-              <textarea name="message" rows={3} maxLength={2000} placeholder="Maintenance requests, tenant updates, vendor coordination..." value={form.message} onChange={handleChange} disabled={status === "submitting"} />
+              What would you like to automate?
+              <textarea name="message" rows={3} required maxLength={2000} placeholder="Maintenance requests, tenant updates, vendor coordination..." value={form.message} onChange={handleChange} disabled={status === "submitting"} />
             </label>
             {error && <p className="assessment-error" role="alert">{error}</p>}
             <button className="btn assessment-submit" type="submit" disabled={status === "submitting"}>
