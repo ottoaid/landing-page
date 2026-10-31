@@ -329,7 +329,7 @@ function Footer() {
   return (
     <footer>
       <a className="logo" href="#">
-      OttoAid.
+        OttoAid.
       </a>
       <span>© 2026 OttoAid · Sample product concept</span>
       <a href="#workflow">Explore the workflow ↑</a>
@@ -348,6 +348,7 @@ function AssessmentDialog({ dialogRef }) {
     company: "",
     unitsManaged: "",
     message: "",
+    website: "",
   });
 
   const close = () => {
@@ -371,6 +372,7 @@ function AssessmentDialog({ dialogRef }) {
 
     setError("");
     setStatus("submitting");
+
     try {
       const response = await fetch(DEMO_API_URL, {
         method: "POST",
@@ -381,11 +383,23 @@ function AssessmentDialog({ dialogRef }) {
           company: form.company.trim(),
           units: form.unitsManaged,
           message: form.message.trim(),
+          website: form.website,
         }),
       });
-      if (!response.ok) throw new Error(`Submission failed (${response.status})`);
+
+      if (!response.ok) {
+        throw new Error(`Submission failed (${response.status})`);
+      }
+
       setStatus("success");
-      setForm({ name: "", email: "", company: "", unitsManaged: "", message: "" });
+      setForm({
+        name: "",
+        email: "",
+        company: "",
+        unitsManaged: "",
+        message: "",
+        website: "",
+      });
     } catch (err) {
       console.error("Demo request error:", err);
       setError("We couldn't send your request. Please try again.");
@@ -410,42 +424,99 @@ function AssessmentDialog({ dialogRef }) {
         if (event.target !== event.currentTarget) return;
         const rect = event.currentTarget.getBoundingClientRect();
         if (
-          event.clientX < rect.left || event.clientX > rect.right ||
-          event.clientY < rect.top || event.clientY > rect.bottom
-        ) close();
+          event.clientX < rect.left ||
+          event.clientX > rect.right ||
+          event.clientY < rect.top ||
+          event.clientY > rect.bottom
+        ) {
+          close();
+        }
       }}
     >
-      <button className="close" type="button" aria-label="Close dialog" onClick={close} disabled={status === "submitting"}>
+      <button
+        className="close"
+        type="button"
+        aria-label="Close dialog"
+        onClick={close}
+        disabled={status === "submitting"}
+      >
         ×
       </button>
+
       {status === "success" ? (
         <div className="assessment-success" role="status">
           <div className="assessment-success-icon" aria-hidden="true">✓</div>
           <h2 id="assessment-title">Thanks for reaching out.</h2>
-          <p>Your request has been received. We'll be in touch to discuss your team's workflows and next steps.</p>
-          <button type="button" className="btn" onClick={close}>Done ↗</button>
+          <p>
+            Your request has been received. We'll be in touch to discuss your
+            team's workflows and next steps.
+          </p>
+          <button type="button" className="btn" onClick={close}>
+            Done ↗
+          </button>
         </div>
       ) : (
         <>
           <div className="eyebrow">A better workflow starts here</div>
           <h2 id="assessment-title">Let’s find your first automation.</h2>
-          <p>Tell us a little about your property management team. We'll reach out to arrange a free demo and discuss what you want to automate.</p>
+          <p>
+            Tell us a little about your property management team. We'll reach
+            out to arrange a free demo and discuss what you want to automate.
+          </p>
+
           <form onSubmit={handleSubmit}>
             <label className="field">
               Your name
-              <input name="name" autoComplete="name" required maxLength={120} placeholder="Alex Morgan" value={form.name} onChange={handleChange} disabled={status === "submitting"} />
+              <input
+                name="name"
+                autoComplete="name"
+                required
+                maxLength={120}
+                placeholder="Alex Morgan"
+                value={form.name}
+                onChange={handleChange}
+                disabled={status === "submitting"}
+              />
             </label>
+
             <label className="field">
               Work email
-              <input name="email" autoComplete="email" type="email" required maxLength={254} placeholder="alex@company.com" value={form.email} onChange={handleChange} disabled={status === "submitting"} />
+              <input
+                name="email"
+                autoComplete="email"
+                type="email"
+                required
+                maxLength={254}
+                placeholder="alex@company.com"
+                value={form.email}
+                onChange={handleChange}
+                disabled={status === "submitting"}
+              />
             </label>
+
             <label className="field">
               Company
-              <input name="company" autoComplete="organization" required maxLength={150} placeholder="Your property management company" value={form.company} onChange={handleChange} disabled={status === "submitting"} />
+              <input
+                name="company"
+                autoComplete="organization"
+                required
+                maxLength={150}
+                placeholder="Your property management company"
+                value={form.company}
+                onChange={handleChange}
+                disabled={status === "submitting"}
+              />
             </label>
+
             <label className="field">
               Units managed
-              <select name="unitsManaged" required value={form.unitsManaged} onChange={handleChange} disabled={status === "submitting"}>
+              <select
+                name="unitsManaged"
+                required
+                value={form.unitsManaged}
+                onChange={handleChange}
+                disabled={status === "submitting"}
+              >
                 <option value="">Select portfolio size</option>
                 <option value="under-100">Under 100</option>
                 <option value="100-500">100–500</option>
@@ -453,13 +524,59 @@ function AssessmentDialog({ dialogRef }) {
                 <option value="2000-plus">2,000+</option>
               </select>
             </label>
+
             <label className="field">
               What would you like to automate?
-              <textarea name="message" rows={3} required maxLength={2000} placeholder="Maintenance requests, tenant updates, vendor coordination..." value={form.message} onChange={handleChange} disabled={status === "submitting"} />
+              <textarea
+                name="message"
+                rows={3}
+                required
+                maxLength={2000}
+                placeholder="Maintenance requests, tenant updates, vendor coordination..."
+                value={form.message}
+                onChange={handleChange}
+                disabled={status === "submitting"}
+              />
             </label>
-            {error && <p className="assessment-error" role="alert">{error}</p>}
-            <button className="btn assessment-submit" type="submit" disabled={status === "submitting"}>
-              {status === "submitting" ? "Sending request…" : "Request a free demo ↗"}
+
+            {/* Honeypot: hidden from legitimate users */}
+            <div
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                left: "-9999px",
+                width: "1px",
+                height: "1px",
+                overflow: "hidden",
+              }}
+            >
+              <label htmlFor="demo-website">Website</label>
+              <input
+                id="demo-website"
+                name="website"
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
+                value={form.website}
+                onChange={handleChange}
+                disabled={status === "submitting"}
+              />
+            </div>
+
+            {error && (
+              <p className="assessment-error" role="alert">
+                {error}
+              </p>
+            )}
+
+            <button
+              className="btn assessment-submit"
+              type="submit"
+              disabled={status === "submitting"}
+            >
+              {status === "submitting"
+                ? "Sending request…"
+                : "Request a free demo ↗"}
             </button>
           </form>
         </>
@@ -471,6 +588,7 @@ function AssessmentDialog({ dialogRef }) {
 export default function App() {
   const dialogRef = useRef(null);
   const onOpenDemo = () => dialogRef.current?.showModal();
+
   return (
     <>
       <div className="wrap">
